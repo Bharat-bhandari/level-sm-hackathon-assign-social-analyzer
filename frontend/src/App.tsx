@@ -1,35 +1,50 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState } from "react";
 
 function App() {
-  const [count, setCount] = useState(0)
+  // For storing the response from your backend
+  const [responseData, setResponseData] = useState(null);
+
+  // Optional: If you want to call the backend immediately on page load
+
+  // Function to call your backend
+  const callBackend = async () => {
+    try {
+      const res = await fetch("http://127.0.0.1:5000/run_flow", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message: "Hello from Vite React!" }),
+        mode: "cors",
+      });
+
+      console.log(res);
+
+      const data = await res.json();
+
+      console.log("hello");
+
+      console.log(data);
+
+      setResponseData(data);
+    } catch (err) {
+      console.error("Error calling backend:", err);
+    }
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
+    <div>
       <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
+      <button onClick={callBackend}>Call Backend</button>
+
+      <div style={{ marginTop: "20px" }}>
+        <strong>Backend Response:</strong>
+        <pre>
+          {responseData ? JSON.stringify(responseData, null, 2) : "No data yet"}
+        </pre>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    </div>
+  );
 }
 
-export default App
+export default App;
