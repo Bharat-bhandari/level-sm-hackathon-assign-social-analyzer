@@ -10,8 +10,6 @@ load_dotenv()
 app = Flask(__name__)
 # Allow all origins:
 CORS(app)
-# OR restrict to a single domain:
-# CORS(app, origins=['https://socialpulse-iota.vercel.app'])
 
 # ----------------------------------------------------------------
 # Langflow / DataStax config
