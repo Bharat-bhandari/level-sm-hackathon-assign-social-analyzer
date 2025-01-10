@@ -1,80 +1,60 @@
 from flask import Flask, request, jsonify
-import os
+from flask_cors import CORS
 import requests
 from dotenv import load_dotenv
-import json
-import warnings
+import os
 
-# --------------------
-# Paste the run_flow code and variables from your generated script here
-# --------------------
+# Load environment variables from .env
+load_dotenv()
 
+app = Flask(__name__)
+# Allow all origins:
+CORS(app)
+# OR restrict to a single domain:
+# CORS(app, origins=['https://socialpulse-iota.vercel.app'])
+
+# ----------------------------------------------------------------
+# Langflow / DataStax config
+# ----------------------------------------------------------------
 BASE_API_URL = "https://api.langflow.astra.datastax.com"
 LANGFLOW_ID = "27788756-d588-4b43-a11b-1f06b175ebc8"
 FLOW_ID = "4fd23e29-cc58-47af-9296-7cbd2885aece"
-# It's best to store your token in environment variables for security
-APPLICATION_TOKEN = os.getenv("APPLICATION_TOKEN") 
 
+# Retrieve your token from environment variables (.env or OS)
+APPLICATION_TOKEN = os.getenv("APPLICATION_TOKEN")
 
-TWEAKS = {
-  "ChatInput-f5zF7": {},
-  "ParseData-Ticw5": {},
-  "Prompt-RmfYU": {},
-  "SplitText-WAAb7": {},
-  "OpenAIModel-9QeqT": {},
-  "ChatOutput-W4TsL": {},
-  "AstraDB-gX6IL": {},
-  "OpenAIEmbeddings-v4Moz": {},
-  "AstraDB-kMYju": {},
-  "File-RDDkm": {},
-  "OpenAIEmbeddings-jahRQ": {}
-}
+@app.route("/run_flow", methods=["POST"])  # Or "/run_flow" if you prefer
+def run_flow():
+    data = request.json
+    message = data.get("message")
+    if not message:
+        return jsonify({"error": "Message is required"}), 400
 
-def run_flow(message: str,
-             endpoint: str = FLOW_ID,
-             output_type: str = "chat",
-             input_type: str = "chat",
-             tweaks: dict = TWEAKS,
-             application_token: str = APPLICATION_TOKEN) -> dict:
-    api_url = f"{BASE_API_URL}/lf/{LANGFLOW_ID}/api/v1/run/{endpoint}"
+    try:
+        api_url = f"{BASE_API_URL}/lf/{LANGFLOW_ID}/api/v1/run/{FLOW_ID}"
+        payload = {
+            "input_value": message,
+            "output_type": "chat",
+            "input_type": "chat",
+        }
 
-    payload = {
-        "input_value": message,
-        "output_type": output_type,
-        "input_type": input_type,
-    }
-    if tweaks:
-        payload["tweaks"] = tweaks
+        headers = {
+            "Content-Type": "application/json",
+        }
+        # If we have a token, include it
+        if APPLICATION_TOKEN:
+            headers["Authorization"] = f"Bearer {APPLICATION_TOKEN}"
 
-    headers = {"Content-Type": "application/json"}
-    if application_token:
-        headers["Authorization"] = f"Bearer {application_token}"
+        # Make the POST request to Langflow
+        response = requests.post(api_url, json=payload, headers=headers)
+        response_data = response.json()
 
-    response = requests.post(api_url, json=payload, headers=headers)
-    return response.json()
+        return jsonify(response_data)
 
-# --------------------
-# Create the Flask application
-# --------------------
-app = Flask(__name__)
-
-@app.route("/run_flow", methods=["POST"])
-def run_flow_api():
-    """
-    POST a JSON object like: { "message": "Your prompt here" }
-    """
-    data = request.get_json(force=True)
-    message = data.get("message", "")
-
-    # optional: handle endpoint or tweaks if you want to override the default
-    endpoint = data.get("endpoint", FLOW_ID)
-
-    # call the run_flow function
-    result = run_flow(
-        message=message,
-        endpoint=endpoint,
-    )
-    return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    # Use PORT from environment if present, else 5000
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)
