@@ -16,7 +16,7 @@ const App: React.FC = () => {
 
     try {
       // 2. Call the Flask backend
-      const response = await fetch("http://127.0.0.1:5000/run_flow", {
+      const response = await fetch("http://88.198.61.79:5000/run_flow", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
